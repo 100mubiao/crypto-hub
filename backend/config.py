@@ -1,3 +1,5 @@
+from typing import Any
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -12,7 +14,13 @@ class Settings(BaseSettings):
         "https://crypto-hub.cryptohubwork.workers.dev",
     ]
     jwt_secret: str = "cryptohub-dev-secret-key-change-in-prod"
-    render_frontend_url: str = "https://crypto-hub.cryptohubwork.workers.dev"
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            return [x.strip() for x in v.split(",") if x.strip()]
+        return v
 
     class Config:
         env_file = ".env"
