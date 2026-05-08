@@ -1,15 +1,25 @@
-import os
+import logging
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from backend.config import settings
 
+logger = logging.getLogger("database")
+
 db_url = settings.database_url
+
 # Render uses postgres:// but SQLAlchemy needs postgresql://
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
+# Handle empty or invalid database URL
+if not db_url or db_url.strip() in ("", "None"):
+    logger.warning("DATABASE_URL is empty, falling back to SQLite")
+    db_url = "sqlite:///./crypto_hub.db"
+
 is_sqlite = db_url.startswith("sqlite")
+
+logger.info("connecting to database: %s", "sqlite" if is_sqlite else "postgresql")
 
 engine = create_engine(
     db_url,
