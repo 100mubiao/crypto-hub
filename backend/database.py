@@ -1,6 +1,7 @@
 import logging
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.exc import ArgumentError
 
 from backend.config import settings
 
@@ -8,24 +9,37 @@ logger = logging.getLogger("database")
 
 db_url = settings.database_url
 
+print(f"[startup] DATABASE_URL from env: '{db_url}'", flush=True)
+
 # Render uses postgres:// but SQLAlchemy needs postgresql://
-if db_url.startswith("postgres://"):
+if isinstance(db_url, str) and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
 # Handle empty or invalid database URL
-if not db_url or db_url.strip() in ("", "None"):
-    logger.warning("DATABASE_URL is empty, falling back to SQLite")
+if not db_url or not isinstance(db_url, str) or db_url.strip() in ("", "None"):
+    print("[startup] DATABASE_URL is empty/invalid, falling back to SQLite", flush=True)
     db_url = "sqlite:///./crypto_hub.db"
 
 is_sqlite = db_url.startswith("sqlite")
 
-logger.info("connecting to database: %s", "sqlite" if is_sqlite else "postgresql")
+print(f"[startup] connecting to database: {'sqlite' if is_sqlite else 'postgresql'}", flush=True)
 
-engine = create_engine(
-    db_url,
-    connect_args={"check_same_thread": False} if is_sqlite else {},
-    pool_pre_ping=True,
-)
+try:
+    engine = create_engine(
+        db_url,
+        connect_args={"check_same_thread": False} if is_sqlite else {},
+        pool_pre_ping=True,
+    )
+except ArgumentError as e:
+    print(f"[startup] Failed to parse database URL '{db_url}': {e}", flush=True)
+    print("[startup] Falling back to SQLite", flush=True)
+    db_url = "sqlite:///./crypto_hub.db"
+    is_sqlite = True
+    engine = create_engine(
+        db_url,
+        connect_args={"check_same_thread": False},
+        pool_pre_ping=True,
+    )
 
 
 @event.listens_for(engine, "connect")
