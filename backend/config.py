@@ -9,10 +9,10 @@ class Settings(BaseSettings):
     cors_origins: list[str] = [
         "http://localhost:5173",
         "http://localhost:4173",
-        "https://crypto-hub.pages.dev",
+        "https://crypto-hub.cryptohubwork.workers.dev",
     ]
     jwt_secret: str = "cryptohub-dev-secret-key-change-in-prod"
-    render_frontend_url: str = "https://crypto-hub.pages.dev"
+    render_frontend_url: str = "https://crypto-hub.cryptohubwork.workers.dev"
 
     class Config:
         env_file = ".env"
