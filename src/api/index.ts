@@ -189,3 +189,23 @@ export async function apiPurchase(plan: string): Promise<PurchaseResponse | null
     body: JSON.stringify({ plan }),
   })
 }
+
+export interface CheckoutSessionResponse {
+  url: string
+}
+
+export interface PaymentSuccessResponse {
+  membership: string
+  membership_expiry: string | null
+}
+
+export async function apiCreateCheckoutSession(plan: string): Promise<CheckoutSessionResponse | null> {
+  return authFetch<CheckoutSessionResponse>('/api/v1/payment/create-checkout-session', {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  })
+}
+
+export async function apiGetPaymentSuccess(sessionId: string): Promise<PaymentSuccessResponse | null> {
+  return authFetch<PaymentSuccessResponse>(`/api/v1/payment/success?session_id=${encodeURIComponent(sessionId)}`)
+}

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.config import settings
 from backend.database import engine, Base
 import backend.models  # noqa: F401 — registers models with Base.metadata
-from backend.routers import coins, trends, alerts, auth
+from backend.routers import coins, trends, alerts, auth, payment
 from backend.scheduler import start_scheduler
 from backend.crawler import seed_alerts
 
@@ -29,6 +29,7 @@ app.include_router(coins.router)
 app.include_router(trends.router)
 app.include_router(alerts.router)
 app.include_router(auth.router)
+app.include_router(payment.router)
 
 
 @app.on_event("startup")

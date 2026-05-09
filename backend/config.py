@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     crawler_interval_minutes: int = 5
     cors_origins: str = "http://localhost:5173,http://localhost:4173,https://crypto-hub.cryptohubwork.workers.dev,https://crypto-hub-b3f.pages.dev"
     jwt_secret: str = "cryptohub-dev-secret-key-change-in-prod"
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    frontend_url: str = "http://localhost:5173"
 
     @property
     def cors_origins_list(self) -> list[str]:
