@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 import uuid
@@ -18,19 +19,31 @@ if settings.coingecko_api_key:
 TOP_COINS = [
     "bitcoin", "ethereum", "solana", "avalanche-2", "chainlink",
     "dogwifcoin", "pepe", "bonk", "render-token", "mantra-dao",
+    "cardano", "polkadot", "near", "aptos", "sui",
+    "internet-computer", "filecoin", "stellar", "arbitrum", "optimism",
 ]
 
 COIN_META: dict[str, dict[str, Any]] = {
-    "bitcoin": {"symbol": "BTC", "name": "Bitcoin", "chain": "Bitcoin", "listing": "2010-07-17T00:00:00Z"},
-    "ethereum": {"symbol": "ETH", "name": "Ethereum", "chain": "Ethereum", "listing": "2015-07-30T00:00:00Z"},
-    "solana": {"symbol": "SOL", "name": "Solana", "chain": "Solana", "listing": "2020-03-16T00:00:00Z"},
-    "avalanche-2": {"symbol": "AVAX", "name": "Avalanche", "chain": "Avalanche", "listing": "2020-09-22T00:00:00Z"},
-    "chainlink": {"symbol": "LINK", "name": "Chainlink", "chain": "Ethereum", "listing": "2017-09-21T00:00:00Z"},
-    "dogwifcoin": {"symbol": "WIF", "name": "dogwifhat", "chain": "Solana", "listing": "2024-08-15T00:00:00Z"},
-    "pepe": {"symbol": "PEPE", "name": "Pepe", "chain": "Ethereum", "listing": "2024-11-01T00:00:00Z"},
-    "bonk": {"symbol": "BONK", "name": "Bonk", "chain": "Solana", "listing": "2024-06-20T00:00:00Z"},
-    "render-token": {"symbol": "RENDER", "name": "Render", "chain": "Solana", "listing": "2022-03-15T00:00:00Z"},
-    "mantra-dao": {"symbol": "OM", "name": "MANTRA", "chain": "Ethereum", "listing": "2021-06-10T00:00:00Z"},
+    "bitcoin": {"symbol": "BTC", "name": "Bitcoin", "chain": "Bitcoin"},
+    "ethereum": {"symbol": "ETH", "name": "Ethereum", "chain": "Ethereum"},
+    "solana": {"symbol": "SOL", "name": "Solana", "chain": "Solana"},
+    "avalanche-2": {"symbol": "AVAX", "name": "Avalanche", "chain": "Avalanche"},
+    "chainlink": {"symbol": "LINK", "name": "Chainlink", "chain": "Ethereum"},
+    "dogwifcoin": {"symbol": "WIF", "name": "dogwifhat", "chain": "Solana"},
+    "pepe": {"symbol": "PEPE", "name": "Pepe", "chain": "Ethereum"},
+    "bonk": {"symbol": "BONK", "name": "Bonk", "chain": "Solana"},
+    "render-token": {"symbol": "RENDER", "name": "Render", "chain": "Solana"},
+    "mantra-dao": {"symbol": "OM", "name": "MANTRA", "chain": "Ethereum"},
+    "cardano": {"symbol": "ADA", "name": "Cardano", "chain": "Cardano"},
+    "polkadot": {"symbol": "DOT", "name": "Polkadot", "chain": "Polkadot"},
+    "near": {"symbol": "NEAR", "name": "NEAR Protocol", "chain": "Near"},
+    "aptos": {"symbol": "APT", "name": "Aptos", "chain": "Aptos"},
+    "sui": {"symbol": "SUI", "name": "Sui", "chain": "Sui"},
+    "internet-computer": {"symbol": "ICP", "name": "Internet Computer", "chain": "ICP"},
+    "filecoin": {"symbol": "FIL", "name": "Filecoin", "chain": "Filecoin"},
+    "stellar": {"symbol": "XLM", "name": "Stellar", "chain": "Stellar"},
+    "arbitrum": {"symbol": "ARB", "name": "Arbitrum", "chain": "Arbitrum"},
+    "optimism": {"symbol": "OP", "name": "Optimism", "chain": "Optimism"},
 }
 
 CHAIN_PLATFORM_MAP = {
@@ -43,23 +56,39 @@ CHAIN_PLATFORM_MAP = {
     "base": "Base",
 }
 
+MAX_RETRIES = 3 if settings.coingecko_api_key else 1
 
-async def fetch_json(url: str) -> dict | list | None:
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(url, headers=COINGECKO_HEADERS)
-            if resp.status_code == 429:
-                retry_after = resp.headers.get("retry-after", "60")
-                logger.warning("Rate limited (429). Retry after %ss. Skipping this cycle.", retry_after)
-                return None
-            resp.raise_for_status()
-            return resp.json()
-    except httpx.TimeoutException:
-        logger.warning("Timeout fetching %s", url)
-        return None
-    except Exception as e:
-        logger.warning("HTTP error fetching %s: %s", url, e)
-        return None
+
+async def fetch_json(url: str, retries: int = MAX_RETRIES) -> dict | list | None:
+    last_error = None
+    for attempt in range(retries):
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(url, headers=COINGECKO_HEADERS)
+                if resp.status_code == 429:
+                    retry_after = int(resp.headers.get("retry-after", "60"))
+                    if attempt < retries - 1:
+                        wait = min(retry_after * (attempt + 1), 30)
+                        logger.warning("Rate limited (429). Retry %d/%d after %ss", attempt + 1, retries, wait)
+                        await asyncio.sleep(wait)
+                        continue
+                    else:
+                        logger.warning("Rate limited (429), exhausted retries. Skipping.")
+                        return None
+                resp.raise_for_status()
+                return resp.json()
+        except httpx.TimeoutException:
+            logger.warning("Timeout fetching %s (attempt %d/%d)", url, attempt + 1, retries)
+            if attempt < retries - 1:
+                await asyncio.sleep(2 ** attempt)
+            last_error = "timeout"
+        except Exception as e:
+            logger.warning("HTTP error fetching %s: %s (attempt %d/%d)", url, e, attempt + 1, retries)
+            if attempt < retries - 1:
+                await asyncio.sleep(2 ** attempt)
+            last_error = str(e)
+    logger.warning("All %d retries exhausted for %s: %s", retries, url, last_error)
+    return None
 
 
 def compute_risk_level(price_change: float, market_cap: float, is_new: bool) -> str:
@@ -106,9 +135,9 @@ async def crawl_market_data():
     for item in data:
         cid: str = item.get("id", "")
         meta = COIN_META.get(cid, {})
-        symbol = meta.get("symbol", item.get("symbol", "")).upper()
-        name = meta.get("name", item.get("name", ""))
-        chain = meta.get("chain", "Unknown")
+        symbol = (meta.get("symbol") or item.get("symbol", "")).upper()
+        name = meta.get("name") or item.get("name", "")
+        chain = meta.get("chain") or CHAIN_PLATFORM_MAP.get(cid) or "Other"
 
         price = item.get("current_price") or 0.0
         change = item.get("price_change_percentage_24h") or 0.0
@@ -117,15 +146,16 @@ async def crawl_market_data():
         image = item.get("image") or ""
 
         is_new = False
-        listing_str = meta.get("listing", "")
-        if listing_str:
-            listing_dt = datetime.datetime.fromisoformat(listing_str.replace("Z", "+00:00"))
-            is_new = listing_dt > day_ago
-        else:
-            listing_dt = now
+        listing_dt = now
+        atl_date = item.get("atl_date")
+        if atl_date:
+            try:
+                listing_dt = datetime.datetime.fromisoformat(atl_date.replace("Z", "+00:00"))
+                is_new = listing_dt > day_ago
+            except (ValueError, TypeError):
+                pass
 
         holders = int(volume * 0.0001) if volume > 0 else 0
-
         heat = compute_heat_score(change, volume, mcap)
         risk = compute_risk_level(change, mcap, is_new)
         on_chain = volume * 0.04 if mcap > 0 else 0
@@ -145,6 +175,8 @@ async def crawl_market_data():
         })
 
     db = SessionLocal()
+    updated = 0
+    created = 0
     try:
         for e in enriched:
             coin = db.query(Coin).filter(Coin.id == e["id"]).first()
@@ -161,6 +193,7 @@ async def crawl_market_data():
                 coin.risk_level = e["risk_level"]
                 coin.holders = e["holders"]
                 coin.updated_at = now
+                updated += 1
             else:
                 coin = Coin(
                     id=e["id"], symbol=e["symbol"], name=e["name"],
@@ -176,8 +209,9 @@ async def crawl_market_data():
                     top_holder_percent=0.0, updated_at=now,
                 )
                 db.add(coin)
+                created += 1
         db.commit()
-        logger.info("Saved %d coins", len(enriched))
+        logger.info("Market crawl done: %d updated, %d created (total %d)", updated, created, len(enriched))
     finally:
         db.close()
 
@@ -201,20 +235,46 @@ async def crawl_trending():
             trend = Trend(
                 id=str(uuid.uuid4()),
                 coin_id=cid,
-                coin_symbol=item.get("symbol", "").upper(),
+                coin_symbol=(item.get("symbol", "") or "").upper(),
                 coin_name=item.get("name", ""),
-                coin_image=item.get("large", item.get("thumb", "")),
-                trend_type="heat",
-                title=f"{item.get('name', '')} trending on CoinGecko",
+                coin_image=item.get("large") or item.get("thumb") or "",
+                trend_type="heat" if i < 5 else "community",
+                title=f"{item.get('name', 'Unknown')} trending #{i + 1}",
                 score=round(score, 1),
-                change=round((i % 5) * 3 - 2, 1),
+                change=round(item.get("data", {}).get("price_change_percentage_24h", {}).get("usd", 0), 2),
                 source="CoinGecko",
-                keywords=["trending"],
+                keywords=item.get("data", {}).get("content", "")[:100].split() if item.get("data", {}).get("content") else [],
                 timestamp=now,
             )
             db.add(trend)
         db.commit()
-        logger.info("Saved %d trending items", len(coins_data[:15]))
+        logger.info("Trending crawl done: %d trends saved", min(len(coins_data), 15))
+    finally:
+        db.close()
+
+
+def seed_initial_data():
+    db = SessionLocal()
+    try:
+        if db.query(Coin).count() > 0:
+            return
+        now = datetime.datetime.now(datetime.timezone.utc)
+        coins = [
+            Coin(
+                id=cid,
+                symbol=meta["symbol"], name=meta["name"], image="",
+                rank=i + 1, price=0.0, change_24h=0.0, volume=0.0, market_cap=0.0,
+                turnover_rate=0.0, on_chain_activity=0.0, social_heat=0,
+                listing_time=now, is_new=False, heat_score=0.0,
+                risk_level="medium", chain=meta["chain"], holders=0,
+                top_holder_percent=0.0, updated_at=now,
+            )
+            for i, (cid, meta) in enumerate(COIN_META.items())
+        ]
+        for c in coins:
+            db.add(c)
+        db.commit()
+        logger.info("Seeded %d initial coins", len(coins))
     finally:
         db.close()
 
@@ -225,67 +285,33 @@ def seed_alerts():
         if db.query(Alert).count() > 0:
             return
         now = datetime.datetime.now(datetime.timezone.utc)
-        alerts_data = [
-            Alert(id=str(uuid.uuid4()), coin_id="pepe", coin_symbol="PEPE", coin_name="Pepe",
-                   event_type="celebrity", title="Increased social mentions for PEPE",
-                   severity="high", timestamp=now),
-            Alert(id=str(uuid.uuid4()), coin_id="bitcoin", coin_symbol="BTC", coin_name="Bitcoin",
-                   event_type="policy", title="BTC ETF inflows reach new monthly high",
-                   severity="medium", timestamp=now),
-            Alert(id=str(uuid.uuid4()), coin_id="solana", coin_symbol="SOL", coin_name="Solana",
-                   event_type="upgrade", title="Solana network upgrade completed successfully",
-                   severity="medium", timestamp=now),
-            Alert(id=str(uuid.uuid4()), coin_id="ethereum", coin_symbol="ETH", coin_name="Ethereum",
-                   event_type="funding", title="Ethereum L2 ecosystem TVL surpasses $50B",
-                   severity="high", timestamp=now),
+        alerts = [
+            Alert(
+                id=str(uuid.uuid4()),
+                coin_id="bitcoin", coin_symbol="BTC", coin_name="Bitcoin",
+                event_type="policy", title="Bitcoin ETF Inflows Surge Past $500M",
+                severity="high", description="Spot Bitcoin ETF recorded $520M in net inflows.",
+                timestamp=now,
+            ),
+            Alert(
+                id=str(uuid.uuid4()),
+                coin_id="ethereum", coin_symbol="ETH", coin_name="Ethereum",
+                event_type="upgrade", title="Ethereum Pectra Upgrade Successfully Deployed",
+                severity="medium",
+                description="The Pectra upgrade is now live on mainnet, introducing key scalability improvements.",
+                timestamp=now,
+            ),
+            Alert(
+                id=str(uuid.uuid4()),
+                coin_id="solana", coin_symbol="SOL", coin_name="Solana",
+                event_type="listing", title="Solana DeFi TVL Reaches New ATH",
+                severity="medium", description="Solana DeFi total value locked surpasses $12B.",
+                timestamp=now,
+            ),
         ]
-        for a in alerts_data:
+        for a in alerts:
             db.add(a)
         db.commit()
-        logger.info("Seeded %d alerts", len(alerts_data))
-    finally:
-        db.close()
-
-
-def seed_initial_data():
-    """Populate DB with demo data so API serves results even without CoinGecko access."""
-    db = SessionLocal()
-    try:
-        if db.query(Coin).count() > 0:
-            return
-        from backend.data_seed import DEMO_COINS, DEMO_TRENDS
-        now = datetime.datetime.now(datetime.timezone.utc)
-        for item in DEMO_COINS:
-            coin = Coin(
-                id=item["id"], symbol=item["symbol"], name=item["name"],
-                image=item.get("image", ""), rank=item.get("rank", 0),
-                price=item.get("price", 0.0), change_24h=item.get("change_24h", 0.0),
-                volume=item.get("volume", 0.0), market_cap=item.get("market_cap", 0.0),
-                turnover_rate=item.get("turnover_rate", 0.0),
-                on_chain_activity=item.get("on_chain_activity", 0.0),
-                social_heat=item.get("social_heat", 0.0),
-                listing_time=now - datetime.timedelta(days=item.get("days_ago", 365)),
-                is_new=item.get("is_new", False),
-                heat_score=item.get("heat_score", 5.0),
-                risk_level=item.get("risk_level", "medium"),
-                chain=item.get("chain", "Unknown"),
-                holders=item.get("holders", 0),
-                top_holder_percent=item.get("top_holder_percent", 0.0),
-            )
-            db.add(coin)
-
-        for item in DEMO_TRENDS:
-            trend = Trend(
-                id=str(uuid.uuid4()), coin_id=item["coin_id"],
-                coin_symbol=item["coin_symbol"], coin_name=item["coin_name"],
-                coin_image="", trend_type=item.get("type", "heat"),
-                title=item.get("title", ""), score=item.get("score", 5.0),
-                change=item.get("change", 0.0), source=item.get("source", ""),
-                keywords=item.get("keywords", []), timestamp=now,
-            )
-            db.add(trend)
-
-        db.commit()
-        logger.info("Seeded %d coins and %d trends", len(DEMO_COINS), len(DEMO_TRENDS))
+        logger.info("Seeded %d initial alerts", len(alerts))
     finally:
         db.close()
