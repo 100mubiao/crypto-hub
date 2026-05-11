@@ -216,6 +216,22 @@ async def crawl_market_data():
         db.close()
 
 
+def _extract_keywords(data: dict) -> list[str]:
+    """Extract keywords from CoinGecko trending item data.
+
+    CoinGecko's content field inside trending item data is an object
+    (title/description), not a string. In Python 3.14, dict[:100] raises
+    KeyError instead of TypeError, so we must handle both types safely.
+    """
+    content = data.get("content")
+    if isinstance(content, dict):
+        text = f"{content.get('title', '')} {content.get('description', '')}"
+        return text[:100].split()
+    if isinstance(content, str):
+        return content[:100].split()
+    return []
+
+
 async def crawl_trending():
     logger.info("Crawling trending data...")
     url = f"{settings.coingecko_base_url}/search/trending"
@@ -243,7 +259,7 @@ async def crawl_trending():
                 score=round(score, 1),
                 change=round(item.get("data", {}).get("price_change_percentage_24h", {}).get("usd", 0), 2),
                 source="CoinGecko",
-                keywords=item.get("data", {}).get("content", "")[:100].split() if item.get("data", {}).get("content") else [],
+                keywords=_extract_keywords(item.get("data", {})),
                 timestamp=now,
             )
             db.add(trend)
