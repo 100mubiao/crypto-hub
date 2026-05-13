@@ -40,6 +40,12 @@ def on_startup():
     logging.getLogger("main").info("CryptoHub API started")
 
 
+@app.get("/")
+@app.head("/", include_in_schema=False)
+def root():
+    return {"status": "ok", "app": "CryptoHub API"}
+
+
 @app.get("/api/v1/health")
 def health():
     return {"status": "ok"}
