@@ -6,6 +6,7 @@ import { formatPrice, formatVolume, formatMarketCap } from '@/data/mock'
 import HeatScore from '@/components/HeatScore.vue'
 import RiskBadge from '@/components/RiskBadge.vue'
 import AdSlot from '@/components/AdSlot.vue'
+import MemberGate from '@/components/MemberGate.vue'
 import PriceChart from '@/components/PriceChart.vue'
 import { fetchChartData } from '@/api'
 
@@ -107,11 +108,13 @@ function changeSign(v: number) {
             </div>
           </div>
 
-          <!-- Price Chart -->
-          <PriceChart
-            :coin-id="coin.id"
-            :fetch-fn="fetchChartData"
-          />
+          <!-- Price Chart (Premium only) -->
+          <MemberGate>
+            <PriceChart
+              :coin-id="coin.id"
+              :fetch-fn="fetchChartData"
+            />
+          </MemberGate>
 
           <!-- On-chain Data -->
           <div class="card">
