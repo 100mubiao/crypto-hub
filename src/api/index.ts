@@ -50,6 +50,14 @@ export interface ApiAlert {
   timestamp: string
 }
 
+export interface ApiOhlcPoint {
+  time: number
+  open: number
+  high: number
+  low: number
+  close: number
+}
+
 export interface ApiMarketOverview {
   total_market_cap: number
   total_volume_24h: number
@@ -105,6 +113,20 @@ export async function fetchTrends(type?: string): Promise<ApiTrend[] | null> {
 export async function fetchAlerts(severity?: string): Promise<ApiAlert[] | null> {
   const q = severity ? `?severity=${severity}` : ''
   return fetchJson<ApiAlert[]>(`/api/v1/alerts${q}`)
+}
+
+export async function fetchChartData(coinId: string, days: number = 7): Promise<ApiOhlcPoint[] | null> {
+  try {
+    const url = `${API_BASE}/api/v1/coins/${coinId}/chart?days=${days}`
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!res.ok) return null
+    return await res.json() as ApiOhlcPoint[]
+  } catch {
+    return null
+  }
 }
 
 export interface LoginResponse {

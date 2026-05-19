@@ -75,6 +75,14 @@ class AlertOut(BaseModel):
         populate_by_name = True
 
 
+class OhlcPoint(BaseModel):
+    time: float  # unix seconds
+    open: float
+    high: float
+    low: float
+    close: float
+
+
 class MarketOverview(BaseModel):
     total_market_cap: float
     total_volume_24h: float

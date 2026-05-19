@@ -6,6 +6,8 @@ import { formatPrice, formatVolume, formatMarketCap } from '@/data/mock'
 import HeatScore from '@/components/HeatScore.vue'
 import RiskBadge from '@/components/RiskBadge.vue'
 import AdSlot from '@/components/AdSlot.vue'
+import PriceChart from '@/components/PriceChart.vue'
+import { fetchChartData } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -105,16 +107,11 @@ function changeSign(v: number) {
             </div>
           </div>
 
-          <!-- K-Line Chart Placeholder -->
-          <div class="card">
-            <h3 class="text-white font-bold mb-3">Price Chart</h3>
-            <div class="bg-crypto-700/50 rounded-lg h-40 sm:h-64 flex items-center justify-center">
-              <div class="text-center">
-                <p class="text-crypto-400 text-sm">📊 Interactive chart loading...</p>
-                <p class="text-crypto-500 text-xs mt-1">Multi-timeframe K-line (Premium feature)</p>
-              </div>
-            </div>
-          </div>
+          <!-- Price Chart -->
+          <PriceChart
+            :coin-id="coin.id"
+            :fetch-fn="fetchChartData"
+          />
 
           <!-- On-chain Data -->
           <div class="card">

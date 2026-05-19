@@ -1,11 +1,17 @@
 import datetime
-from fastapi import APIRouter, Depends, Query
+import logging
+
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
+from backend.config import settings
 from backend.database import get_db
 from backend.models import Coin
-from backend.schemas import CoinOut, MarketOverview
+from backend.schemas import CoinOut, MarketOverview, OhlcPoint
+
+logger = logging.getLogger("coins")
 
 router = APIRouter(prefix="/api/v1", tags=["coins"])
 
@@ -75,3 +81,46 @@ def new_coins(db: Session = Depends(get_db)):
         .order_by(Coin.listing_time.desc())
         .all()
     )
+
+
+@router.get("/coins/{coin_id}/chart", response_model=list[OhlcPoint])
+async def get_coin_chart(coin_id: str, days: int = Query(7, ge=1, le=365)):
+    url = (
+        f"{settings.coingecko_base_url}/coins/{coin_id}/ohlc"
+        f"?vs_currency=usd&days={days}"
+    )
+    headers = {}
+    if settings.coingecko_api_key:
+        headers["x-cg-demo-api-key"] = settings.coingecko_api_key
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 429:
+                logger.warning("CoinGecko rate limited on chart data for %s", coin_id)
+                raise HTTPException(429, "Rate limited. Try again later.")
+            if resp.status_code == 404:
+                raise HTTPException(404, f"Coin '{coin_id}' not found on CoinGecko")
+            resp.raise_for_status()
+            data: list = resp.json()
+    except httpx.TimeoutException:
+        raise HTTPException(504, "CoinGecko timeout")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Chart fetch error for %s: %s", coin_id, e)
+        raise HTTPException(502, "Failed to fetch chart data")
+
+    if not data or not isinstance(data, list):
+        return []
+
+    return [
+        OhlcPoint(
+            time=pt[0] // 1000,  # CoinGecko returns ms, convert to seconds
+            open=pt[1],
+            high=pt[2],
+            low=pt[3],
+            close=pt[4],
+        )
+        for pt in data
+    ]
