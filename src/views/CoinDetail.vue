@@ -108,7 +108,7 @@ function changeSign(v: number) {
           <!-- K-Line Chart Placeholder -->
           <div class="card">
             <h3 class="text-white font-bold mb-3">Price Chart</h3>
-            <div class="bg-crypto-700/50 rounded-lg h-64 flex items-center justify-center">
+            <div class="bg-crypto-700/50 rounded-lg h-40 sm:h-64 flex items-center justify-center">
               <div class="text-center">
                 <p class="text-crypto-400 text-sm">📊 Interactive chart loading...</p>
                 <p class="text-crypto-500 text-xs mt-1">Multi-timeframe K-line (Premium feature)</p>

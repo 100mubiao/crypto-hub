@@ -96,26 +96,29 @@ const navLinks = [
         </div>
       </div>
 
-      <div v-if="mobileMenu" class="md:hidden pb-4 space-y-1">
-        <router-link
-          v-for="link in navLinks"
-          :key="link.path"
-          :to="link.path"
-          class="block px-3 py-2 text-sm rounded-lg"
-          :class="$route.path === link.path ? 'bg-crypto-700 text-white' : 'text-crypto-300'"
-          @click="mobileMenu = false"
-        >
-          {{ link.label }}
-        </router-link>
-        <hr class="border-crypto-700 my-2" />
-        <template v-if="store.user">
-          <div class="px-3 py-2 text-xs text-crypto-400">{{ store.user.email }}</div>
-          <button @click="store.logout(); mobileMenu = false; router.push('/')" class="block w-full text-left px-3 py-2 text-sm text-crypto-300 rounded-lg hover:bg-crypto-700">Sign Out</button>
-        </template>
-        <template v-else>
-          <router-link to="/login" class="block px-3 py-2 text-sm text-crypto-300 rounded-lg hover:bg-crypto-700" @click="mobileMenu = false">Sign In</router-link>
-          <router-link to="/register" class="block px-3 py-2 text-sm text-crypto-300 rounded-lg hover:bg-crypto-700" @click="mobileMenu = false">Sign Up</router-link>
-        </template>
+      <div v-if="mobileMenu" class="md:hidden border-t border-crypto-700">
+        <div class="py-2 space-y-0.5">
+          <router-link
+            v-for="link in navLinks"
+            :key="link.path"
+            :to="link.path"
+            class="block px-4 py-3 text-sm font-medium rounded-lg mx-2"
+            :class="$route.path === link.path ? 'bg-crypto-700 text-white' : 'text-crypto-300 hover:bg-crypto-700/50'"
+            @click="mobileMenu = false"
+          >
+            {{ link.label }}
+          </router-link>
+        </div>
+        <div class="border-t border-crypto-700 py-2">
+          <template v-if="store.user">
+            <div class="px-4 py-2 text-xs text-crypto-400 truncate">{{ store.user.email }}</div>
+            <button @click="store.logout(); mobileMenu = false; router.push('/')" class="block w-full text-left px-4 py-3 text-sm text-crypto-300 hover:bg-crypto-700/50 rounded-lg mx-2 w-[calc(100%-16px)]">Sign Out</button>
+          </template>
+          <template v-else>
+            <router-link to="/login" class="block px-4 py-3 text-sm text-crypto-300 hover:bg-crypto-700/50 rounded-lg mx-2" @click="mobileMenu = false">Sign In</router-link>
+            <router-link to="/register" class="block px-4 py-3 text-sm text-crypto-300 hover:bg-crypto-700/50 rounded-lg mx-2" @click="mobileMenu = false">Sign Up</router-link>
+          </template>
+        </div>
       </div>
     </div>
   </header>

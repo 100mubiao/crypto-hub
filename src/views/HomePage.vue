@@ -76,8 +76,8 @@ function changeSign(v: number) {
     <!-- Ad Banner -->
     <AdSlot type="banner" class="mb-6" />
 
-    <!-- Coin Table -->
-    <div class="card overflow-x-auto mb-8">
+    <!-- Coin Table (Desktop) -->
+    <div class="card overflow-x-auto mb-8 hidden md:block">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-bold text-white">All Coins</h2>
         <span class="text-xs text-crypto-400">{{ store.filteredCoins.length }} coins</span>
@@ -121,6 +121,45 @@ function changeSign(v: number) {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Coin Cards (Mobile) -->
+    <div class="mb-8 block md:hidden">
+      <div class="flex items-center justify-between mb-3 px-1">
+        <h2 class="text-base font-bold text-white">All Coins</h2>
+        <span class="text-xs text-crypto-400">{{ store.filteredCoins.length }} coins</span>
+      </div>
+      <div class="space-y-2">
+        <div
+          v-for="coin in store.filteredCoins"
+          :key="coin.id"
+          class="card flex items-center gap-3 py-3 px-4 cursor-pointer active:scale-[0.98] transition-transform"
+          @click="$router.push('/coin/' + coin.id)"
+        >
+          <!-- Rank -->
+          <span class="text-crypto-500 text-xs font-mono w-5 shrink-0">{{ coin.rank }}</span>
+          <!-- Icon -->
+          <div class="w-8 h-8 rounded-full bg-crypto-600 flex items-center justify-center text-[10px] overflow-hidden shrink-0">
+            <img v-if="coin.image" :src="coin.image" :alt="coin.symbol" class="w-full h-full object-cover" />
+            <span v-else class="text-crypto-300 font-bold">{{ coin.symbol.slice(0, 2) }}</span>
+          </div>
+          <!-- Name + Symbol -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="font-semibold text-white text-sm truncate">{{ coin.symbol }}</span>
+              <span v-if="coin.isNew" class="text-[9px] bg-accent/20 text-accent px-1 rounded shrink-0">NEW</span>
+            </div>
+            <span class="text-crypto-400 text-xs truncate block">{{ coin.name }}</span>
+          </div>
+          <!-- Price + Change -->
+          <div class="text-right shrink-0">
+            <div class="text-sm font-mono text-white font-medium">{{ formatPrice(coin.price) }}</div>
+            <div :class="changeClass(coin.change24h)" class="text-xs font-mono">
+              {{ changeSign(coin.change24h) }}{{ coin.change24h.toFixed(2) }}%
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Quick Sections Grid -->

@@ -51,7 +51,7 @@ const filteredTrends = computed(() => {
       <div v-if="filteredTrends.length === 0" class="text-crypto-400 text-sm py-8 text-center">
         No trends found in this category
       </div>
-      <div v-for="(item, idx) in filteredTrends" :key="item.id" class="flex items-start gap-4 py-4 border-b border-crypto-700 last:border-0">
+      <div v-for="(item, idx) in filteredTrends" :key="item.id" class="flex items-start gap-4 py-4 border-b border-crypto-700 last:border-0 active:scale-[0.99] transition-transform">
         <span class="text-crypto-500 text-xs font-mono w-5">{{ idx + 1 }}</span>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
