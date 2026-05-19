@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     coingecko_base_url: str = "https://api.coingecko.com/api/v3"
     coingecko_api_key: str = ""
     crawler_interval_minutes: int = 5
-    cors_origins: str = "http://localhost:5173,http://localhost:4173,https://crypto-hub.cryptohubwork.workers.dev,https://crypto-hub-b3f.pages.dev"
+    cors_origins: str = "http://localhost:5173,http://localhost:4173,https://crypto-hub.cryptohubwork.workers.dev,https://crypto-hub-b3f.pages.dev,https://cryptohub.dpdns.org"
     jwt_secret: str = "cryptohub-dev-secret-key-change-in-prod"
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
