@@ -69,6 +69,15 @@ def run_migrations():
         conn.commit()
         logger.info("Migration: added users.theme column")
 
+    # users.token_version
+    if "users" in existing_tables and "token_version" not in {c["name"] for c in inspector.get_columns("users")}:
+        if is_sqlite:
+            conn.execute(sa.text("ALTER TABLE users ADD COLUMN token_version INTEGER DEFAULT 0"))
+        else:
+            conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 0"))
+        conn.commit()
+        logger.info("Migration: added users.token_version column")
+
     conn.close()
 
 

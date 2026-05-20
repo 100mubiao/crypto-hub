@@ -20,8 +20,8 @@ async function submit() {
     error.value = 'Passwords do not match.'
     return
   }
-  if (password.value.length < 6) {
-    error.value = 'Password must be at least 6 characters.'
+  if (password.value.length < 8) {
+    error.value = 'Password must be at least 8 characters.'
     return
   }
   loading.value = true
@@ -72,7 +72,7 @@ async function submit() {
             v-model="password"
             type="password"
             required
-            placeholder="At least 6 characters"
+            placeholder="At least 8 characters"
             class="input-field w-full"
           />
         </div>

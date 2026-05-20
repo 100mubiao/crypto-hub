@@ -131,6 +131,7 @@ export async function fetchChartData(coinId: string, days: number = 7): Promise<
 
 export interface LoginResponse {
   access_token: string
+  refresh_token: string
   token_type: string
   email: string
   name: string

@@ -81,4 +81,5 @@ class User(Base):
     membership = Column(String, default="free")
     membership_expiry = Column(DateTime, nullable=True)
     theme = Column(String, default="default")
+    token_version = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)

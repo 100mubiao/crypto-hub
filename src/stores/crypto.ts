@@ -194,6 +194,7 @@ export const useCryptoStore = defineStore('crypto', () => {
     if (!res) throw new Error('Login failed')
     token.value = res.access_token
     localStorage.setItem('crypto_token', res.access_token)
+    localStorage.setItem('crypto_refresh_token', res.refresh_token)
     user.value = { email: res.email, name: res.name, membership: res.membership as UserInfo['membership'] }
     isMember.value = res.membership === 'premium' || res.membership === 'lifetime'
     return res
@@ -204,6 +205,7 @@ export const useCryptoStore = defineStore('crypto', () => {
     if (!res) throw new Error('Registration failed')
     token.value = res.access_token
     localStorage.setItem('crypto_token', res.access_token)
+    localStorage.setItem('crypto_refresh_token', res.refresh_token)
     user.value = { email: res.email, name: res.name, membership: res.membership as UserInfo['membership'] }
     isMember.value = false
     return res
@@ -212,6 +214,7 @@ export const useCryptoStore = defineStore('crypto', () => {
   function logout() {
     token.value = ''
     localStorage.removeItem('crypto_token')
+    localStorage.removeItem('crypto_refresh_token')
     user.value = null
     isMember.value = false
   }
