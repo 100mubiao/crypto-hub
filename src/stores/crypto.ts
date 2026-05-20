@@ -85,6 +85,15 @@ export const useCryptoStore = defineStore('crypto', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const usingMock = ref(true)
+  const theme = ref(localStorage.getItem('crypto_theme') || 'default')
+
+  function setTheme(t: string) {
+    theme.value = t
+    localStorage.setItem('crypto_theme', t)
+    document.documentElement.classList.toggle('theme-neon', t === 'neon')
+    document.documentElement.classList.toggle('theme-transition', true)
+    setTimeout(() => document.documentElement.classList.remove('theme-transition'), 400)
+  }
 
   const hotCoins = computed(() =>
     [...coins.value].sort((a, b) => b.heatScore - a.heatScore).slice(0, 5)
@@ -213,6 +222,12 @@ export const useCryptoStore = defineStore('crypto', () => {
     return res
   }
 
+  function applyTheme(t: string) {
+    document.documentElement.classList.toggle('theme-neon', t === 'neon')
+    document.documentElement.classList.add('theme-transition')
+    setTimeout(() => document.documentElement.classList.remove('theme-transition'), 400)
+  }
+
   async function restoreSession() {
     if (!token.value) return
     const me = await apiGetMe()
@@ -224,6 +239,8 @@ export const useCryptoStore = defineStore('crypto', () => {
       localStorage.removeItem('crypto_token')
     }
   }
+
+  applyTheme(theme.value)
 
   function saveStrategy(s: SavedStrategy) {
     savedStrategies.value.push(s)
@@ -240,8 +257,9 @@ export const useCryptoStore = defineStore('crypto', () => {
   return {
     coins, trends, alerts, newCoins, savedStrategies,
     isMember, user, token, searchQuery, selectedChain,
-    loading, error, usingMock,
+    loading, error, usingMock, theme,
     hotCoins, gainers, losers, volumeSpikers, todayNew, filteredCoins,
     initialize, setMember, login, register, logout, purchase, restoreSession, saveStrategy, deleteStrategy, getCoinById,
+    setTheme,
   }
 })

@@ -2,11 +2,13 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCryptoStore } from '@/stores/crypto'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
 const router = useRouter()
 const store = useCryptoStore()
 const mobileMenu = ref(false)
 const showUserMenu = ref(false)
+const showThemePanel = ref(false)
 
 const navLinks = [
   { label: 'Dashboard', path: '/' },
@@ -76,8 +78,11 @@ const navLinks = [
                 <span class="w-6 h-6 bg-accent/20 text-accent rounded-full flex items-center justify-center text-xs font-bold">{{ store.user.name.charAt(0).toUpperCase() }}</span>
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
               </button>
-              <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 bg-crypto-800 border border-crypto-700 rounded-lg shadow-lg py-1 z-50" @click.outside="showUserMenu = false">
+              <div v-if="showUserMenu" class="absolute right-0 mt-2 w-56 bg-crypto-800 border border-crypto-700 rounded-lg shadow-lg py-1 z-50" @click.outside="showUserMenu = false">
                 <div class="px-3 py-2 text-xs text-crypto-400 border-b border-crypto-700">{{ store.user.email }}</div>
+                <button v-if="store.isMember" @click="showThemePanel = !showThemePanel; showUserMenu = false" class="w-full text-left px-3 py-2 text-sm text-crypto-300 hover:bg-crypto-700 hover:text-white transition-colors flex items-center gap-2">
+                  <span>🎨</span> Themes
+                </button>
                 <button @click="store.logout(); showUserMenu = false; router.push('/')" class="w-full text-left px-3 py-2 text-sm text-crypto-300 hover:bg-crypto-700 hover:text-white transition-colors">Sign Out</button>
               </div>
             </div>
@@ -118,6 +123,19 @@ const navLinks = [
             <router-link to="/login" class="block px-4 py-3 text-sm text-crypto-300 hover:bg-crypto-700/50 rounded-lg mx-2" @click="mobileMenu = false">Sign In</router-link>
             <router-link to="/register" class="block px-4 py-3 text-sm text-crypto-300 hover:bg-crypto-700/50 rounded-lg mx-2" @click="mobileMenu = false">Sign Up</router-link>
           </template>
+        </div>
+      </div>
+
+      <!-- Theme Panel Overlay -->
+      <div v-if="showThemePanel" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" @click.self="showThemePanel = false">
+        <div class="w-full max-w-md">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-white font-bold text-lg">Choose Theme</h3>
+            <button @click="showThemePanel = false" class="text-crypto-400 hover:text-white p-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <ThemeSwitcher />
         </div>
       </div>
     </div>

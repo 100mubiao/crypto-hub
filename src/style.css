@@ -18,6 +18,40 @@
   --color-warn: #ff8c00;
 }
 
+/* ===== Neon Theme (Premium) ===== */
+.theme-neon {
+  --color-crypto-900: #0a0e1a;
+  --color-crypto-800: #111622;
+  --color-crypto-700: #1a1f32;
+  --color-crypto-600: #252a42;
+  --color-crypto-500: #3d4460;
+  --color-crypto-400: #6a72a0;
+  --color-crypto-300: #9aa3d0;
+  --color-crypto-200: #c8cff0;
+  --color-crypto-100: #e8ecff;
+  --color-accent: #a855f7;
+  --color-accent-hover: #9333ea;
+  --color-hot: #f43f5e;
+  --color-cold: #06b6d4;
+  --color-gold: #fbbf24;
+  --color-warn: #f97316;
+}
+
+.theme-neon .text-gradient {
+  background: linear-gradient(135deg, #a855f7, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.theme-neon .card {
+  border-color: #2a2f45;
+}
+
+.theme-neon .card:hover {
+  border-color: #a855f7;
+}
+
 body {
   margin: 0;
   background: var(--color-crypto-900);
@@ -121,16 +155,15 @@ body {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--color-crypto-600);
-  font-weight: 500;
+  border-bottom: 1px solid var(--color-crypto-700);
 }
 .table-base td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-crypto-700);
   font-size: 0.875rem;
 }
-.table-base tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+.table-base tbody tr:hover {
+  background: var(--color-crypto-700);
 }
 
 .positive {
@@ -138,4 +171,9 @@ body {
 }
 .negative {
   color: var(--color-hot);
+}
+
+.theme-transition,
+.theme-transition * {
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease !important;
 }
