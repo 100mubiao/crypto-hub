@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import settings
-from backend.database import engine, Base
+from backend.database import engine, Base, run_migrations
 import backend.models  # noqa: F401 — registers models with Base.metadata
 from backend.routers import coins, trends, alerts, auth, payment
 from backend.scheduler import start_scheduler
@@ -35,6 +35,7 @@ app.include_router(payment.router)
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    run_migrations()
     seed_alerts()
     start_scheduler()
     logging.getLogger("main").info("CryptoHub API started")

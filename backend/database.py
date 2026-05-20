@@ -52,6 +52,24 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor.close()
 
 
+def run_migrations():
+    """Add missing columns to existing tables for schema evolution."""
+    import sqlalchemy as sa
+    inspector = sa.inspect(engine)
+    conn = engine.connect()
+
+    # users.theme
+    if "theme" not in {c["name"] for c in inspector.get_columns("users")}:
+        if is_sqlite:
+            conn.execute(sa.text("ALTER TABLE users ADD COLUMN theme VARCHAR DEFAULT 'default'"))
+        else:
+            conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS theme VARCHAR DEFAULT 'default'"))
+        conn.commit()
+        logger.info("Migration: added users.theme column")
+
+    conn.close()
+
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
