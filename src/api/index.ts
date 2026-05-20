@@ -143,6 +143,7 @@ export interface MeResponse {
   name: string
   membership: string
   membership_expiry: string | null
+  theme: string
 }
 
 export interface PurchaseResponse {
@@ -210,6 +211,14 @@ export async function apiPurchase(plan: string): Promise<PurchaseResponse | null
     method: 'POST',
     body: JSON.stringify({ plan }),
   })
+}
+
+export async function apiUpdateTheme(theme: string): Promise<string | null> {
+  const res = await authFetch<{ theme: string }>('/api/v1/auth/theme', {
+    method: 'PUT',
+    body: JSON.stringify({ theme }),
+  })
+  return res?.theme ?? null
 }
 
 export interface CheckoutSessionResponse {

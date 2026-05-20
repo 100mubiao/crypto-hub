@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from backend.config import settings
 from backend.database import get_db
 from backend.models import User
-from backend.schemas import UserRegister, UserLogin, TokenOut, UserOut, PurchaseRequest
+from backend.schemas import UserRegister, UserLogin, TokenOut, UserOut, ThemeUpdate, PurchaseRequest
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -95,3 +95,12 @@ def purchase(body: PurchaseRequest, user: User = Depends(get_current_user), db: 
         user.membership_expiry = None
     db.commit()
     return {"message": "Purchase successful", "membership": user.membership}
+
+
+@router.put("/theme")
+def update_theme(body: ThemeUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if user.membership not in ("premium", "lifetime"):
+        raise HTTPException(status_code=403, detail="Premium membership required")
+    user.theme = body.theme
+    db.commit()
+    return {"theme": user.theme}

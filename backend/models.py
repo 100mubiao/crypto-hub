@@ -69,4 +69,5 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     membership = Column(String, default="free")
     membership_expiry = Column(DateTime, nullable=True)
+    theme = Column(String, default="default")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)

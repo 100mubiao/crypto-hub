@@ -11,6 +11,7 @@ import {
   apiRegister,
   apiPurchase,
   apiGetMe,
+  apiUpdateTheme,
   type ApiCoin,
   type ApiTrend,
   type ApiAlert,
@@ -87,12 +88,15 @@ export const useCryptoStore = defineStore('crypto', () => {
   const usingMock = ref(true)
   const theme = ref(localStorage.getItem('crypto_theme') || 'default')
 
-  function setTheme(t: string) {
+  function setTheme(t: string, syncToServer = true) {
     theme.value = t
     localStorage.setItem('crypto_theme', t)
     document.documentElement.classList.toggle('theme-neon', t === 'neon')
     document.documentElement.classList.toggle('theme-transition', true)
     setTimeout(() => document.documentElement.classList.remove('theme-transition'), 400)
+    if (syncToServer && token.value && isMember.value) {
+      apiUpdateTheme(t)
+    }
   }
 
   const hotCoins = computed(() =>
@@ -234,6 +238,9 @@ export const useCryptoStore = defineStore('crypto', () => {
     if (me) {
       user.value = { email: me.email, name: me.name, membership: me.membership as UserInfo['membership'] }
       isMember.value = me.membership === 'premium' || me.membership === 'lifetime'
+      if (me.theme && me.theme !== 'default') {
+        setTheme(me.theme, false)
+      }
     } else {
       token.value = ''
       localStorage.removeItem('crypto_token')

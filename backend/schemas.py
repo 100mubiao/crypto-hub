@@ -116,9 +116,14 @@ class UserOut(BaseModel):
     name: str
     membership: str
     membership_expiry: datetime.datetime | None = None
+    theme: str = "default"
 
     class Config:
         from_attributes = True
+
+
+class ThemeUpdate(BaseModel):
+    theme: str
 
 
 class PurchaseRequest(BaseModel):
