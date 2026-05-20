@@ -57,6 +57,12 @@ async function submit() {
           />
         </div>
 
+        <div class="flex justify-end -mt-2">
+          <router-link to="/forgot-password" class="text-xs text-crypto-400 hover:text-accent transition-colors">
+            Forgot password?
+          </router-link>
+        </div>
+
         <p v-if="error" class="text-hot text-sm text-center">{{ error }}</p>
 
         <button type="submit" :disabled="loading" class="btn-primary w-full">

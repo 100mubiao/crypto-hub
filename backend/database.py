@@ -58,8 +58,10 @@ def run_migrations():
     inspector = sa.inspect(engine)
     conn = engine.connect()
 
+    existing_tables = set(inspector.get_table_names())
+
     # users.theme
-    if "theme" not in {c["name"] for c in inspector.get_columns("users")}:
+    if "users" in existing_tables and "theme" not in {c["name"] for c in inspector.get_columns("users")}:
         if is_sqlite:
             conn.execute(sa.text("ALTER TABLE users ADD COLUMN theme VARCHAR DEFAULT 'default'"))
         else:

@@ -126,5 +126,14 @@ class ThemeUpdate(BaseModel):
     theme: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str
+
+
 class PurchaseRequest(BaseModel):
     plan: str
