@@ -21,7 +21,7 @@
             <li><router-link to="/trends" class="hover:text-accent transition-colors">Trends</router-link></li>
             <li><router-link to="/advanced-filter" class="hover:text-accent transition-colors">Advanced Filter</router-link></li>
             <li><router-link to="/pricing" class="hover:text-accent transition-colors">Pricing</router-link></li>
-            <li><a href="/cryptohub_app.apk" class="hover:text-accent transition-colors flex items-center gap-1" download>
+            <li><a href="https://github.com/100mubiao/Crypto-hub/releases/latest" target="_blank" rel="noopener" class="hover:text-accent transition-colors flex items-center gap-1">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
               Download App
             </a></li>
