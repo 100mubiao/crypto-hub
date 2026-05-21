@@ -1,0 +1,5 @@
+# Serve APK files with correct MIME type and as downloads
+/cryptohub_app.apk
+  Content-Type: application/vnd.android.package-archive
+  Content-Disposition: attachment; filename="CryptoHub.apk"
+  Cache-Control: public, max-age=3600
