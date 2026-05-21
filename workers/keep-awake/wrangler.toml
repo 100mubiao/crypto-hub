@@ -1,0 +1,6 @@
+name = "cryptohub-keep-awake"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+
+[triggers]
+crons = ["*/5 * * * *"]
