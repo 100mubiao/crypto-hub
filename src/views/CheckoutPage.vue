@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCryptoStore } from '@/stores/crypto'
-import { apiCreateCheckoutSession, apiGetPaymentSuccess } from '@/api'
+import { apiCreateCheckoutSession, apiGetPaymentSuccess, apiCreatePayPalOrder, apiCapturePayPalOrder } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -25,9 +25,32 @@ const done = ref(false)
 const error = ref('')
 const canceled = ref(route.query.canceled === 'true')
 const sessionId = ref(route.query.session_id as string || '')
+const paypalReady = ref(false)
+const paypalLoading = ref(false)
+const paypalOrderId = ref('')
+let paypalButtonsRendered = false
 
 onMounted(async () => {
-  // Success redirect from Stripe: verify session
+  // Handle PayPal success redirect
+  if (route.query.paypal === 'success' && route.query.token) {
+    loading.value = true
+    try {
+      const res = await apiCapturePayPalOrder(route.query.token as string)
+      if (res) {
+        await store.restoreSession()
+        done.value = true
+      } else {
+        error.value = 'Could not verify payment. Please contact support.'
+      }
+    } catch {
+      error.value = 'PayPal verification failed.'
+    } finally {
+      loading.value = false
+    }
+    return
+  }
+
+  // Handle Stripe success redirect: verify session
   if (sessionId.value) {
     loading.value = true
     try {
@@ -43,8 +66,94 @@ onMounted(async () => {
     } finally {
       loading.value = false
     }
+    return
   }
+
+  // Load PayPal SDK for checkout form
+  await loadPayPalSDK()
 })
+
+async function loadPayPalSDK() {
+  if (document.getElementById('paypal-sdk')) {
+    paypalReady.value = true
+    return
+  }
+  const VITE_API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+  // Fetch client ID from backend status endpoint (fallback to a config approach)
+  let clientId = ''
+  try {
+    const res = await fetch(`${VITE_API_BASE}/api/v1/payment/paypal/client-id`, {
+      signal: AbortSignal.timeout(5000),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      clientId = data.client_id
+    }
+  } catch {
+    // Fallback: will show error when user clicks PayPal
+  }
+
+  if (!clientId) {
+    paypalReady.value = true // allow user to try, error will show on click
+    return
+  }
+
+  const script = document.createElement('script')
+  script.id = 'paypal-sdk'
+  script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture`
+  script.onload = () => {
+    paypalReady.value = true
+    nextTick(() => renderPayPalButtons())
+  }
+  document.body.appendChild(script)
+}
+
+function renderPayPalButtons() {
+  if (paypalButtonsRendered || typeof (window as any).paypal === 'undefined') return
+  const container = document.getElementById('paypal-button-container')
+  if (!container) return
+
+  paypalButtonsRendered = true
+  ;(window as any).paypal.Buttons({
+    createOrder: async () => {
+      paypalLoading.value = true
+      error.value = ''
+      try {
+        const res = await apiCreatePayPalOrder(plan.value!.apiKey)
+        if (!res?.order_id) throw new Error('Failed to create order')
+        paypalOrderId.value = res.order_id
+        return res.order_id
+      } catch (e) {
+        error.value = 'Failed to create PayPal order.'
+        paypalLoading.value = false
+        throw e
+      }
+    },
+    onApprove: async (data: { orderID: string }) => {
+      try {
+        const res = await apiCapturePayPalOrder(data.orderID)
+        if (res) {
+          await store.restoreSession()
+          done.value = true
+        } else {
+          error.value = 'Payment verification failed. Please contact support.'
+        }
+      } catch {
+        error.value = 'Failed to complete PayPal payment.'
+      } finally {
+        paypalLoading.value = false
+      }
+    },
+    onCancel: () => {
+      error.value = 'PayPal payment was cancelled.'
+      paypalLoading.value = false
+    },
+    onError: () => {
+      error.value = 'PayPal encountered an error. Please try again.'
+      paypalLoading.value = false
+    },
+  }).render('#paypal-button-container')
+}
 
 async function payWithStripe() {
   if (!plan.value) return
@@ -53,7 +162,6 @@ async function payWithStripe() {
   try {
     const res = await apiCreateCheckoutSession(plan.value.apiKey)
     if (res?.url) {
-      // Redirect to Stripe Checkout
       window.location.href = res.url
     } else {
       error.value = 'Failed to create checkout session. Please try again.'
@@ -112,13 +220,26 @@ function goHome() {
       <p v-if="error" class="text-hot text-sm mb-4">{{ error }}</p>
 
       <div class="space-y-3" v-if="plan">
-        <button @click="payWithStripe" :disabled="loading" class="btn-primary w-full">
-          {{ loading ? 'Redirecting to Stripe...' : 'Pay with Stripe' }}
+        <button @click="payWithStripe" :disabled="loading || paypalLoading" class="btn-primary w-full flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 1.672 0 3.063.683 4.037 1.275l1.1-2.431C16.532 3.654 14.88 3 12.977 3 9.764 3 7.3 4.922 7.3 7.725c0 2.357 1.86 3.702 4.347 4.617 2.2.81 3.407 1.426 3.407 2.514 0 .882-.738 1.391-2.064 1.391-1.702 0-3.386-.779-4.405-1.462l-1.22 2.478c1.29.997 3.049 1.651 5.1 1.651 3.458 0 5.968-1.978 5.968-4.73 0-2.585-1.916-3.916-4.547-4.873l.009-.006z"/></svg>
+          {{ loading ? 'Redirecting...' : 'Pay with Card (Stripe)' }}
         </button>
+
+        <div class="relative flex items-center py-2">
+          <div class="flex-grow border-t border-crypto-700"></div>
+          <span class="flex-shrink mx-3 text-crypto-500 text-xs">or pay with</span>
+          <div class="flex-grow border-t border-crypto-700"></div>
+        </div>
+
+        <div v-if="paypalReady" id="paypal-button-container" class="min-h-[40px]"></div>
+        <div v-else class="text-center py-2">
+          <span class="text-crypto-500 text-sm">Loading PayPal...</span>
+        </div>
+
         <button @click="router.back()" class="btn-ghost w-full">Cancel</button>
       </div>
 
-      <p class="text-crypto-500 text-xs mt-4">Secured by Stripe. Your payment info is never stored on our servers.</p>
+      <p class="text-crypto-500 text-xs mt-4">Secured by Stripe & PayPal. Your payment info is never stored on our servers.</p>
     </div>
   </div>
 </template>

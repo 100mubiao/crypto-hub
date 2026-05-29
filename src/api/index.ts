@@ -241,3 +241,22 @@ export async function apiCreateCheckoutSession(plan: string): Promise<CheckoutSe
 export async function apiGetPaymentSuccess(sessionId: string): Promise<PaymentSuccessResponse | null> {
   return authFetch<PaymentSuccessResponse>(`/api/v1/payment/success?session_id=${encodeURIComponent(sessionId)}`)
 }
+
+export interface PayPalCreateOrderResponse {
+  order_id: string
+  status: string
+}
+
+export async function apiCreatePayPalOrder(plan: string): Promise<PayPalCreateOrderResponse | null> {
+  return authFetch<PayPalCreateOrderResponse>('/api/v1/payment/paypal/create-order', {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  })
+}
+
+export async function apiCapturePayPalOrder(orderId: string): Promise<PaymentSuccessResponse | null> {
+  return authFetch<PaymentSuccessResponse>('/api/v1/payment/paypal/capture-order', {
+    method: 'POST',
+    body: JSON.stringify({ order_id: orderId }),
+  })
+}
