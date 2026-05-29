@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     jwt_secret: str = ""
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    paypal_client_id: str = ""
+    paypal_client_secret: str = ""
+    paypal_webhook_id: str = ""
+    paypal_sandbox: bool = True
     frontend_url: str = "http://localhost:5173"
     resend_api_key: str = ""
     app_url: str = "http://localhost:5173"
